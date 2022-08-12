@@ -8,6 +8,8 @@ import bz2
 import gzip
 import pathlib
 import typing
+import zstandard
+import lz4.frame as lz4
 
 
 class Record:
@@ -216,7 +218,9 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
     """
     magic_dict = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
                   (b'\x42', b'\x5a', b'\x68'): 'bz2',
-                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip'}
+                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
+                  b'(\xb5/\xfd': 'zst',
+                  b'\x04"M\x18': 'lz4'}
     # since recognized compressions are not added dynamically, the max size of magic bytes can be static
     max_len = 4
 
@@ -232,10 +236,12 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
 
 def get_open_func(filename: typing.Union[str, pathlib.Path]):
     """Returns function to open a file."""
-    compression_type = get_compression_type(filename)
-    if compression_type == 'gz':
-        return gzip.open
-    elif compression_type == 'bz2':
-        return bz2.open
-    else:
-        return open
+    open_funcs = {
+        'gz': gzip.open,
+        'bz2': bz2.open,
+        'plain': open,
+        'zst': zstandard.open,
+        'lz4': lz4.open
+    }
+
+    return open_funcs[get_compression_type(filename)]
