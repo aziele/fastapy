@@ -227,11 +227,9 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
     fh = open(str(filename), 'rb')
     file_start = fh.read(max_len)
     fh.close()
-    compression_type = 'plain'
-    for magic_bytes in magic_dict:
-        if file_start.startswith(magic_bytes):
-            compression_type = magic_dict[magic_bytes]
-    return compression_type
+    compression_type = [magic_dict[elem] for elem in magic_dict if file_start.startswith(elem)]
+
+    return compression_type[0] if compression_type else 'plain'
 
 
 def get_open_func(filename: typing.Union[str, pathlib.Path]):
