@@ -9,7 +9,8 @@ import gzip
 import pathlib
 import typing
 
-class Record():
+
+class Record:
     """Object representing a FASTA (aka Pearson) record.
 
     Attributes:
@@ -213,18 +214,19 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
     Returns:
         Compression type (gz, bz2, plain)
     """
-    magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
-                  'bz2': (b'\x42', b'\x5a', b'\x68'),
-                  'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
-    max_len = max(len(x) for x in magic_dict)
+    magic_dict = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
+                  (b'\x42', b'\x5a', b'\x68'): 'bz2',
+                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip'}
+    # since recognized compressions are not added dynamically, the max size of magic bytes can be static
+    max_len = 4
 
     fh = open(str(filename), 'rb')
     file_start = fh.read(max_len)
     fh.close()
     compression_type = 'plain'
-    for file_type, magic_bytes in magic_dict.items():
+    for magic_bytes in magic_dict:
         if file_start.startswith(magic_bytes):
-            compression_type = file_type
+            compression_type = magic_dict[magic_bytes]
     return compression_type
 
 
