@@ -199,13 +199,7 @@ def to_dict(sequences):
         >>> len(pdict)
         2
     """
-    d = dict()
-    for record in sequences:
-        key = record.id
-        if key in d:
-            raise ValueError(f"Duplicate key '{key}'")
-        d[key] = record
-    return d
+    return {record.id: record for record in sequences}
 
 
 def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
