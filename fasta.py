@@ -9,16 +9,12 @@ https://github.com/aziele/fasta-parser
 
 import bz2
 import gzip
+import io
 import pathlib
 import typing
+import zipfile
 
-# lz4
-try:
-    import lz4.frame as lz4
-    HAS_LZ4 = True
-except ImportError:
-    HAS_LZ4 = False
-# zstanard
+# Zstandard
 try:
     import zstandard
     HAS_ZSTANDARD = True
@@ -154,7 +150,7 @@ class Record:
         lst = [self.description, '\n']
         if wrap:
             for i in range(0, len(self.seq), wrap):
-                lst.append(f'{self.seq[i:i + wrap]}\n')
+                lst.append(f'{self.seq[i : i + wrap]}\n')
         else:
             lst.append(self.seq)
             lst.append('\n')
@@ -173,7 +169,7 @@ def parse(filename: typing.Union[str, pathlib.Path]):
     seqid = None
     desc = None
     seq = []
-    with get_open_func(filename)(filename, 'rt') as fh:
+    with get_open_func(filename) as fh:
         for line in fh:
             if line.startswith('>'):
                 if seq:
@@ -214,28 +210,25 @@ def to_dict(sequences) -> dict:
 
 
 def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
-    """Guesses the compression (if any) on a file using the first few bytes.
+    """Guesses the compression (if any) of a file based on the first few bytes.
 
     http://stackoverflow.com/questions/13044562
 
     Returns:
         Compression type (gz, bz2, zip, zst, lz4, plain)
     """
-    d = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
-         (b'\x42', b'\x5a', b'\x68'): 'bz2',
-         (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
-         b'(\xb5/\xfd': 'zstandard',
-         b'\x04"M\x18': 'lz4'}
-    # Since recognized compressions are not added dynamically, 
-    # the max size of magic bytes can be static.
-    max_len = 4
-    fh = open(str(filename), 'rb')
+    magic_dict = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
+                  (b'\x42', b'\x5a', b'\x68'): 'bz2',
+                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
+                  (b'\xb5', b'\xfd'): 'zstandard'}
+    max_len = max(len(few_bytes) for few_bytes in magic_dict)
+    fh = open(filename, 'rb')
     file_start = fh.read(max_len)
     fh.close()
-    compression_type = 'plain'
-    for first_bytes in d:
+    compression_type = None
+    for first_bytes in magic_dict:
         if file_start.startswith(first_bytes):
-            compression_type = d[first_bytes]
+            compression_type = magic_dict[first_bytes]
             break
     return compression_type
 
@@ -244,18 +237,22 @@ def get_open_func(filename: typing.Union[str, pathlib.Path]) -> typing.Callable:
     """Returns a function to open a file.
 
     Raises:
-        If compression type of the file is zstandard or lz4 and these packages
-        are not installed, an error is raised.
+        If a compression type of the file is zstandard and zstandard package is
+        not installed, an error is raised.
     """
     compression_type = get_compression_type(filename)
-    open_funcs = {
-        'gz': gzip.open,
-        'bz2': bz2.open,
-        'plain': open,
-        'zstandard': zstandard.open if HAS_ZSTANDARD else None,
-        'lz4': lz4.open if HAS_LZ4 else None,
-    }
-    func = open_funcs[compression_type]
-    if func == None:
-        raise ImportError(f'{compression_type} is required for: {filename}')
-    return func
+    if not compression_type:
+        return open(filename)
+    elif compression_type == 'gz':
+        return gzip.open(filename, 'rt')
+    elif compression_type == 'bz2':
+        return bz2.open(filename, 'rt')
+    elif compression_type == 'zip':
+        with zipfile.ZipFile(filename) as z:
+            filename = z.namelist()[0]
+            return io.TextIOWrapper(z.open(filename))
+    elif compression_type == 'zstandard':
+        if HAS_ZSTANDARD:
+            return zstandard.open
+        else:
+            raise ImportError(f'Zstandard is required for: {filename}')
