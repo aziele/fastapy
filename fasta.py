@@ -201,8 +201,8 @@ def to_dict(sequences) -> dict:
         A dict mapping sequence id (key) to Record object (value).
 
     Example:
-        >>> import Fasta
-        >>> record_dict = Fasta.to_dict(Fasta.parse('test.fasta'))
+        >>> import fasta
+        >>> record_dict = fasta.to_dict(fasta.parse('test.fasta'))
         >>> print(sorted(record_dict.keys()))
         ['ENO94161.1', 'NP_002433.1', 'sequence']
         >>> print(record_dict['ENO94161.1'].description)
