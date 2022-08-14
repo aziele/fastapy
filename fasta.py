@@ -8,8 +8,11 @@ import bz2
 import gzip
 import pathlib
 import typing
+import zstandard
+import lz4.frame as lz4
 
-class Record():
+
+class Record:
     """Object representing a FASTA (aka Pearson) record.
 
     Attributes:
@@ -196,13 +199,7 @@ def to_dict(sequences):
         >>> len(pdict)
         2
     """
-    d = dict()
-    for record in sequences:
-        key = record.id
-        if key in d:
-            raise ValueError(f"Duplicate key '{key}'")
-        d[key] = record
-    return d
+    return {record.id: record for record in sequences}
 
 
 def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
@@ -213,27 +210,30 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
     Returns:
         Compression type (gz, bz2, plain)
     """
-    magic_dict = {'gz': (b'\x1f', b'\x8b', b'\x08'),
-                  'bz2': (b'\x42', b'\x5a', b'\x68'),
-                  'zip': (b'\x50', b'\x4b', b'\x03', b'\x04')}
-    max_len = max(len(x) for x in magic_dict)
+    magic_dict = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
+                  (b'\x42', b'\x5a', b'\x68'): 'bz2',
+                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
+                  b'(\xb5/\xfd': 'zst',
+                  b'\x04"M\x18': 'lz4'}
+    # since recognized compressions are not added dynamically, the max size of magic bytes can be static
+    max_len = 4
 
     fh = open(str(filename), 'rb')
     file_start = fh.read(max_len)
     fh.close()
-    compression_type = 'plain'
-    for file_type, magic_bytes in magic_dict.items():
-        if file_start.startswith(magic_bytes):
-            compression_type = file_type
-    return compression_type
+    compression_type = [magic_dict[elem] for elem in magic_dict if file_start.startswith(elem)]
+
+    return compression_type[0] if compression_type else 'plain'
 
 
 def get_open_func(filename: typing.Union[str, pathlib.Path]):
     """Returns function to open a file."""
-    compression_type = get_compression_type(filename)
-    if compression_type == 'gz':
-        return gzip.open
-    elif compression_type == 'bz2':
-        return bz2.open
-    else:
-        return open
+    open_funcs = {
+        'gz': gzip.open,
+        'bz2': bz2.open,
+        'plain': open,
+        'zst': zstandard.open,
+        'lz4': lz4.open
+    }
+
+    return open_funcs[get_compression_type(filename)]
