@@ -1,6 +1,9 @@
 """Reading and writing FASTA files.
 
-Copyright 2022 Andrzej Zielezinski (a.zielezinski@gmail.com)
+Copyright (c) 2022 by 
+Andrzej Zielezinski (a.zielezinski@gmail.com)
+Maciej Michalczyk (mccv99@gmail.com)
+
 https://github.com/aziele/fasta-parser
 """
 
@@ -8,8 +11,19 @@ import bz2
 import gzip
 import pathlib
 import typing
-import zstandard
-import lz4.frame as lz4
+
+# lz4
+try:
+    import lz4.frame as lz4
+    HAS_LZ4 = True
+except ImportError:
+    HAS_LZ4 = False
+# zstanard
+try:
+    import zstandard
+    HAS_ZSTANDARD = True
+except ImportError:
+    HAS_ZSTANDARD = False
 
 
 class Record:
@@ -26,8 +40,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2', 
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> print(record)
             >NP_055309.2 TNRC6A
             MRELEAKAT
@@ -42,8 +56,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2', 
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> print(record.description)
             >NP_055309.2 TNRC6A
         """
@@ -57,8 +71,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2', 
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> for amino_acid in record:
             ...     print(amino_acid)
             M
@@ -83,8 +97,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2', 
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> print('M' in record)
             True
         """
@@ -95,8 +109,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2',
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> print(record)
             >NP_055309.2 TNRC6A
             MRELEAKAT
@@ -108,8 +122,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2',
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> len(record)
             9
         """
@@ -126,8 +140,8 @@ class Record:
 
         Example:
             >>> record = Record(id='NP_055309.2',
-            ...                      seq='MRELEAKAT',
-            ...                      desc='TNRC6A')
+            ...                 seq='MRELEAKAT',
+            ...                 desc='TNRC6A')
             >>> print(record.format())
             >NP_055309.2 TNRC6A
             MRELEAKAT
@@ -173,10 +187,10 @@ def parse(filename: typing.Union[str, pathlib.Path]):
             yield Record(seqid, "".join(seq), desc)
 
 
-def to_dict(sequences):
+def to_dict(sequences) -> dict:
     """Turns a generator or list of Record objects into a dictionary.
 
-    This function is not suitable for very large sets of sequences, as all the
+    This function is not suitable for very large sets of sequences as all the
     SeqRecord objects are held in memory.
 
     Args:
@@ -186,18 +200,15 @@ def to_dict(sequences):
     Returns:
         A dict mapping sequence id (key) to Record object (value).
 
-    Raises:
-        If there are duplicate keys, an error is raised.
-
     Example:
         >>> import Fasta
-        >>> pdict = Fasta.to_dict(Fasta.parse('test.fa'))
-        >>> print(sorted(pdict.keys()))
-        ['gi|195354411|', 'tr|Q8SY33|']
-        >>> print(pdict['tr|Q8SY33|'].description)
-        Gawky, isoform A [Drosophila melanogaster]
+        >>> record_dict = Fasta.to_dict(Fasta.parse('test.fasta'))
+        >>> print(sorted(record_dict.keys()))
+        ['ENO94161.1', 'NP_002433.1', 'sequence']
+        >>> print(record_dict['ENO94161.1'].description)
+        RRM domain-containing RNA-binding protein
         >>> len(pdict)
-        2
+        3
     """
     return {record.id: record for record in sequences}
 
@@ -208,32 +219,43 @@ def get_compression_type(filename: typing.Union[str, pathlib.Path]) -> str:
     http://stackoverflow.com/questions/13044562
 
     Returns:
-        Compression type (gz, bz2, plain)
+        Compression type (gz, bz2, zip, zst, lz4, plain)
     """
-    magic_dict = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
-                  (b'\x42', b'\x5a', b'\x68'): 'bz2',
-                  (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
-                  b'(\xb5/\xfd': 'zst',
-                  b'\x04"M\x18': 'lz4'}
-    # since recognized compressions are not added dynamically, the max size of magic bytes can be static
+    d = {(b'\x1f', b'\x8b', b'\x08'): 'gz',
+         (b'\x42', b'\x5a', b'\x68'): 'bz2',
+         (b'\x50', b'\x4b', b'\x03', b'\x04'): 'zip',
+         b'(\xb5/\xfd': 'zstandard',
+         b'\x04"M\x18': 'lz4'}
+    # Since recognized compressions are not added dynamically, 
+    # the max size of magic bytes can be static.
     max_len = 4
-
     fh = open(str(filename), 'rb')
     file_start = fh.read(max_len)
     fh.close()
-    compression_type = [magic_dict[elem] for elem in magic_dict if file_start.startswith(elem)]
+    compression_type = 'plain'
+    for first_bytes in d:
+        if file_start.startswith(first_bytes):
+            compression_type = d[first_bytes]
+            break
+    return compression_type
 
-    return compression_type[0] if compression_type else 'plain'
 
+def get_open_func(filename: typing.Union[str, pathlib.Path]) -> typing.Callable:
+    """Returns a function to open a file.
 
-def get_open_func(filename: typing.Union[str, pathlib.Path]):
-    """Returns function to open a file."""
+    Raises:
+        If compression type of the file is zstandard or lz4 and these packages
+        are not installed, an error is raised.
+    """
+    compression_type = get_compression_type(filename)
     open_funcs = {
         'gz': gzip.open,
         'bz2': bz2.open,
         'plain': open,
-        'zst': zstandard.open,
-        'lz4': lz4.open
+        'zstandard': zstandard.open if HAS_ZSTANDARD else None,
+        'lz4': lz4.open if HAS_LZ4 else None,
     }
-
-    return open_funcs[get_compression_type(filename)]
+    func = open_funcs[compression_type]
+    if func == None:
+        raise ImportError(f'{compression_type} is required for: {filename}')
+    return func

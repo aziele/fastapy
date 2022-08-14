@@ -1,10 +1,18 @@
 # fasta-parser
 A lightweight Python module to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format).
 
-The design was inspired by the utility of BioPython’s SeqIO, which supports many sequence formats. This repo focuses only on FASTA records. It is faster than BioPython and can handle compressed FASTA files.
+The design was inspired by the utility of BioPython’s SeqIO, which supports many sequence formats. This repo focuses only on FASTA records. It is faster than BioPython and can handle compressed FASTA files (gz, bz2, zip, zstandard).
 
 ## Requirements
 Python >= 3.8
+
+### Optional dependencies
+Two dependencies can be installed later if needed:
+
+1. lz4 >= 4.0.2
+    > Install with: `pip install lz4`
+2. zstandard  >= 0.18.0
+    > Install with `pip install zstandard`.
 
 ## Quick Start
 Typical usage is to read a FASTA file and loop over the record(s).

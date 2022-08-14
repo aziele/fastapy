@@ -92,10 +92,4 @@ class TestFasta(unittest.TestCase):
         self.assertEqual(len(d), 3)
         self.assertEqual(len(d['ENO94161.1']), 79)
 
-    def test_to_dict2(self):
-        lst = list(fasta.parse(self.filename))
-        lst.append(fasta.Record(id='sequence', seq='MST'))
-        with self.assertRaises(ValueError):
-            fasta.to_dict(lst)
-
 unittest.main()
