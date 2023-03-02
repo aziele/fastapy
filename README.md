@@ -1,16 +1,10 @@
 # fasta-parser
 A lightweight Python module to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format).
 
-The design was inspired by the utility of BioPython’s SeqIO, which supports many sequence formats. This repo focuses only on FASTA records. It is faster than BioPython and can handle compressed FASTA files (gzip, bzip2, zip, Zstandard).
+The design was inspired by the utility of BioPython’s SeqIO, which supports many sequence formats. This repo focuses only on FASTA records. It is faster than BioPython, can handle compressed FASTA files (gzip, bzip2, zip), and has no Python package dependencies.
 
 ## Requirements
 Python >= 3.8
-
-### Optional dependencies
-This module has no Python package dependencies (i.e., it only uses the standard library). However, if you work with Zstandard-compressed FASTA files, you will need the following package:
-
-* zstandard  >= 0.18.0
-    > Install with: `pip install zstandard`
 
 ## Quick Start
 Typical usage is to read a FASTA file and loop over the record(s).
@@ -53,7 +47,7 @@ print(len(record))          # 77
 print('EEEA' in record)     # True
 ```
 
-By default, the sequence line in the FASTA format is wrapped to 70 characters. You can provide the line length. Use zero (or None) for no wrapping.
+By default, the sequence line is wrapped to 70 characters. You can provide the line length. Use zero (or None) for no wrapping.
 
 ```python
 print(record)
@@ -99,6 +93,16 @@ import fasta
 
 records = fasta.to_dict(fasta.parse('test/test.fasta.gz'))
 print(records['NP_002433.1'])   # Use any record id
+```
+
+### read
+If you want to read only a single record from a file, use the `read()` function.
+
+```python
+import fasta
+
+seq_record = fasta.read('test/test.fasta')
+print(seq_record.id)           # NP_002433.1
 ```
 
 ## Test

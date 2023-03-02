@@ -92,6 +92,19 @@ class TestFasta(unittest.TestCase):
         file_type = fasta.get_compression_type(self.test_dir / 'test.fasta.zip')
         self.assertEqual(file_type, 'zip')
 
+    def test_parse_fasta_file(self):
+        lst = [r.id for r in fasta.parse(self.test_dir / 'test.fasta.gz')]
+        self.assertEqual(len(lst), 3)
+        self.assertEqual(set(lst), {'NP_002433.1', 'ENO94161.1', 'sequence'})
+
+    def test_parse_empty_file(self):
+        lst = [rec for rec in fasta.parse(self.test_dir / 'empty_file.fasta')]
+        self.assertEqual(len(lst), 0)
+
+    def test_parse_missing_file(self):
+        with self.assertRaises(FileNotFoundError):
+            list(fasta.parse("non_existent_file.fasta"))
+
     def test_parse_gz_file(self):
         record = list(fasta.parse(self.test_dir / 'test.fasta.gz'))[0]
         self.assertEqual(record.id, 'NP_002433.1')
@@ -107,9 +120,27 @@ class TestFasta(unittest.TestCase):
         self.assertEqual(record.id, 'NP_002433.1')
         self.assertEqual(len(record), 362)
 
-    def test_to_dict1(self):
+    def test_read(self):
+        record = fasta.read(self.test_dir / 'test.fasta.zip')
+        self.assertEqual(record.id, 'NP_002433.1')
+        self.assertEqual(len(record), 362)        
+
+    def test_to_dict(self):
         d = fasta.to_dict(fasta.parse(self.filename))
         self.assertEqual(len(d), 3)
         self.assertEqual(len(d['ENO94161.1']), 79)
+
+    def test_to_dict_duplicate_records(self):
+        records = [
+          fasta.Record(id='id1', seq='ATGC'),
+          fasta.Record(id='id2', seq='CGTA'),
+          fasta.Record(id='id1', seq='ATGC'),
+        ]
+        with self.assertRaises(ValueError):
+            fasta.to_dict(records)
+
+    def test_to_dict_empty_records(self):
+        self.assertEqual(fasta.to_dict([]), {})
+
 
 unittest.main()
