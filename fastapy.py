@@ -1,11 +1,4 @@
-"""Reading and writing FASTA files.
-
-Copyright (c) 2023 by 
-Andrzej Zielezinski (a.zielezinski@gmail.com)
-Maciej Michalczyk (mccv99@gmail.com)
-
-https://github.com/aziele/fasta-parser
-"""
+"""A lightweight Python module to read and write FASTA sequence records"""
 
 import bz2
 import gzip
@@ -14,6 +7,7 @@ import pathlib
 import typing
 import zipfile
 
+__version__ = '1.0.3'
 
 class Record:
     """Object representing a FASTA (aka Pearson) record.
