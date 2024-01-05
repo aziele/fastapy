@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/522251113.svg)](https://zenodo.org/doi/10.5281/zenodo.10462088)
+
 # fastapy
 A lightweight Python package to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format).
 
