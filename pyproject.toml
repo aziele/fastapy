@@ -1,9 +1,10 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastapy"
+description = "A lightweight Python module to read and write FASTA sequence records"
 authors = [
     {name = "Andrzej Zielezinski", email = "a.zielezinski@gmail.com"},
     {name = "Maciej Michalczyk", email = "mccv99@gmail.com"}
@@ -20,10 +21,10 @@ classifiers = [
 ]
 keywords = ["FASTA", "sequence", "record", "parser"]
 requires-python = ">=3.8"
-dynamic = ["version", "description"]
+dynamic = ["version"]
 
-[tool.flit.module]
-name = "fastapy"
+[tool.setuptools.dynamic]
+version = {attr = "fastapy.__version__"}
 
 [project.urls]
 Documentation = "https://github.com/aziele/fastapy"

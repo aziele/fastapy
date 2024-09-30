@@ -7,7 +7,7 @@ import pathlib
 import typing
 import zipfile
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 class Record:
     """Object representing a FASTA (aka Pearson) record.

@@ -1,3 +1,10 @@
+![PyPI - Version](https://img.shields.io/pypi/v/fastapy?label=version&color=blue)
+![tests workflow](https://github.com/aziele/fastapy/actions/workflows/run-tests.yml/badge.svg)
+
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=F0F0F0)](#)
+[![Windows](https://custom-icon-badges.demolab.com/badge/Windows-0078D6?logo=windows11&logoColor=white)](#)
+
 [![DOI](https://zenodo.org/badge/522251113.svg)](https://zenodo.org/doi/10.5281/zenodo.10462088)
 
 # fastapy
