@@ -42,7 +42,7 @@ Typical usage is to read a FASTA file and loop over the sequences record(s).
 ```python
 import fastapy
 
-for record in fastapy.parse('test/test.fasta'):
+for record in fastapy.parse('tests/test.fasta'):
     print(record.id, len(record), record.seq[:10], record.desc)
 ```
 
@@ -102,7 +102,7 @@ The `parse()` function is a generator to read FASTA records as `Record` objects 
 ```python
 import fastapy
 
-for record in fastapy.parse('test/test.fasta.gz'):
+for record in fastapy.parse('tests/test.fasta.gz'):
     print(record.id)
 ```
 
@@ -111,7 +111,7 @@ For some tasks you may need to have a reusable access to the records. For this p
 ```python
 import fastapy
 
-records = list(fastapy.parse('test/test.fasta.gz'))
+records = list(fastapy.parse('tests/test.fasta.gz'))
 print(records[0].id)   # First record
 print(records[-1].id)  # Last record
 ```
@@ -121,7 +121,7 @@ Another common task is to index your records by sequence identifier. Use `to_dic
 ```python
 import fastapy
 
-records = fastapy.to_dict(fasta.parse('test/test.fasta.gz'))
+records = fastapy.to_dict(fasta.parse('tests/test.fasta.gz'))
 print(records['NP_002433.1'])   # Use any record id
 ```
 
@@ -131,7 +131,7 @@ The `read()` function reads only the first FASTA record from a file. It does not
 ```python
 import fastapy
 
-seq_record = fastapy.read('test/test.fasta')
+seq_record = fastapy.read('tests/test.fasta')
 print(seq_record.id)           # NP_002433.1
 ```
 
