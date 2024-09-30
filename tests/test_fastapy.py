@@ -142,5 +142,5 @@ class TestFasta(unittest.TestCase):
     def test_to_dict_empty_records(self):
         self.assertEqual(fp.to_dict([]), {})
 
-
-unittest.main()
+if __name__ == '__main__':
+    unittest.main()
