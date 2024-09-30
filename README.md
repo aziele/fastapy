@@ -1,10 +1,6 @@
-![PyPI - Version](https://img.shields.io/pypi/v/fastapy?label=version&color=green)
+![PyPI - Version](https://img.shields.io/pypi/v/fastapy?label=version&color=blue)
 ![tests workflow](https://github.com/aziele/fastapy/actions/workflows/run-tests.yml/badge.svg)
-
-[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=0078D6)](#)
-[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=0078D6)](#)
-[![Windows](https://custom-icon-badges.demolab.com/badge/Windows-0078D6?logo=windows11&logoColor=white)](#)
-
+![OS](https://img.shields.io/badge/OS-Linux%20MacOS%20Windows-7373e3)
 [![DOI](https://zenodo.org/badge/522251113.svg)](https://zenodo.org/doi/10.5281/zenodo.10462088)
 
 # fastapy
@@ -143,7 +139,7 @@ print(seq_record.id)           # NP_002433.1
 You can run tests to ensure that the module works as expected.
 
 ```
-./test/test.py
+python -m unittest discover
 ```
 
 ## License
