@@ -121,9 +121,24 @@ class TestFasta(unittest.TestCase):
         self.assertEqual(len(record), 362)
 
     def test_read(self):
-        record = fp.read(TEST_DIR / 'test.fasta.zip')
+        record = fp.read(self.filename)
+        self.assertEqual(record.id, 'NP_002433.1')
+        self.assertEqual(len(record), 362)  
+
+    def test_read_gz_file(self):
+        record = fp.read(TEST_DIR / 'test.fasta.gz')
         self.assertEqual(record.id, 'NP_002433.1')
         self.assertEqual(len(record), 362)        
+
+    def test_read_zip_file(self):
+        record = fp.read(TEST_DIR / 'test.fasta.gz')
+        self.assertEqual(record.id, 'NP_002433.1')
+        self.assertEqual(len(record), 362)  
+
+    def test_read_bz2_file(self):
+        record = fp.read(TEST_DIR / 'test.fasta.bz2')
+        self.assertEqual(record.id, 'NP_002433.1')
+        self.assertEqual(len(record), 362)  
 
     def test_to_dict(self):
         d = fp.to_dict(fp.parse(self.filename))

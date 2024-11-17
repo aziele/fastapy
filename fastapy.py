@@ -7,7 +7,7 @@ import pathlib
 import typing
 import zipfile
 
-__version__ = '1.0.4'
+__version__ = '1.0.5'
 
 class Record:
     """Object representing a FASTA (aka Pearson) record.
@@ -183,33 +183,34 @@ def parse(filename: typing.Union[str, pathlib.Path]) -> Record:
         OSError: If an operating system error occurs while opening the file.
         ValueError: If the compression type of the file is unknown.
     """
-    # Assume the file is not compressed and in text format.
+    # Try to open the file as a plain text.
     try:
-        with open(filename) as fh:
+        with open(filename, 'rt') as fh:
             yield from parse_handle(fh)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"File not found: '{filename}'")
-    except OSError:
-        raise OSError(f"OS error occurred trying to open: '{filename}'")
-    except:
-        # Try to determine the compression type.
-        compression_type = get_compression_type(filename)
-        if compression_type == 'bz2':
-            open_func = bz2.open(filename, 'rt')
-        elif compression_type == 'gz':
-            open_func = gzip.open(filename, 'rt')
-        elif compression_type == 'zip':
-            with zipfile.ZipFile(filename) as z:
-                filename = z.namelist()[0]
-                open_func = io.TextIOWrapper(z.open(filename))
-        else:
-            raise ValueError(
-                f"Cannot read file '{filename}': unknown compression type"
-            )
+        return  # Exit early if the file is successfully parsed
+    except (FileNotFoundError, OSError):
+        raise # Re-raise known exceptions
+    except Exception:
+        # Continue to check for compression types if an unknown exception occurs
+        pass
 
-        # Open the file with the appropriate function and parse FASTA records.
-        with open_func as fh:
+    # Check and handle compressed formats
+    compression_type = get_compression_type(filename)
+    if compression_type == 'bz2':
+        with bz2.open(filename, 'rt') as fh:
             yield from parse_handle(fh)
+    elif compression_type == 'gz':
+        with gzip.open(filename, 'rt') as fh:
+            yield from parse_handle(fh)
+    elif compression_type == 'zip':
+        with zipfile.ZipFile(filename) as z:
+            # Assuming the first file in the archive is the one we want
+            inner_filename = z.namelist()[0]
+            with io.TextIOWrapper(z.open(inner_filename)) as fh:
+                yield from parse_handle(fh)
+            return
+    else:
+        raise ValueError(f"Unknown compression type in file: '{filename}'")
 
 
 def read(filename: typing.Union[str, pathlib.Path]) -> Record:
