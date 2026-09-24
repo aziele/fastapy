@@ -3,144 +3,191 @@
 ![OS](https://img.shields.io/badge/OS-Linux%20MacOS%20Windows-7373e3)
 
 # fastapy
-A lightweight Python package to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format).
 
-The design was inspired by the utility of BioPython’s SeqIO, which supports many sequence formats. This repo focuses only on FASTA records. It is faster than BioPython, can handle compressed FASTA files (gzip, bzip2, zip), and has no Python package dependencies.
+A lightweight Python package to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format), with support for compressed files and no external dependencies.
 
-## Requirements
-Python >= 3.8
+## Key features
+
+- **No dependencies:** Uses only the Python standard library.
+- **Streaming:** Reads and writes records one by one without loading entire files into memory.
+- **Compression:** Reads gzip, bzip2, and ZIP files; writes gzip and bzip2 files.
+- **Path support:** Accepts string paths and `pathlib.Path` objects.
 
 ## Installation
 
-You can install `fastapy` from [PyPI](https://pypi.org/project/fastapy/):
+Requires Python 3.8 or later. Install from [PyPI](https://pypi.org/project/fastapy/):
 
 ```bash
 pip install fastapy
 ```
 
-or directly from GitHub:
+Or install directly from GitHub:
 
 ```bash
 pip install "git+https://github.com/aziele/fastapy.git"
 ```
 
-You can also use `fastapy` without installation since it doesn't have any dependencies. Simply clone or download this repository and you're ready to use it.
+Because `fastapy` has no third-party dependencies, you can also use it directly by downloading or cloning the repository:
 
 ```bash
 git clone https://github.com/aziele/fastapy.git
 cd fastapy
 python
->>> import fastapy
->>> fastapy.__doc__
-'A lightweight Python module to read and write FASTA sequence records'
 ```
 
-## Quick Start
-Typical usage is to read a FASTA file and loop over the sequences record(s).
+```python
+>>> import fastapy
+```
+
+## Quick start
+
+Read a FASTA file and save sequences of at least 100 residues to a compressed file:
 
 ```python
 import fastapy
 
-for record in fastapy.parse('tests/test.fasta'):
-    print(record.id, len(record), record.seq[:10], record.desc)
+records = (
+    record
+    for record in fastapy.parse("input.fasta")
+    if len(record) >= 100
+)
+count = fastapy.write(records, "filtered.fasta.gz")
+print(f"Wrote {count} records")
 ```
 
-Output:
-
-```
-NP_002433.1  362   METDAPQPGL   RNA-binding protein Musashi homolog 1 [Homo sapiens]
-ENO94161.1    79   MKLLISGLGP   RRM domain-containing RNA-binding protein
-sequence     292   MKLSKIALMM
-```
+Records are processed one by one without loading the entire file into memory.
 
 ## Usage
-This module contains the `Record` class representing a FASTA sequence record and the `parse()` function to read FASTA records from a file.
 
-### Record object
-Record is an object that contains information on a FASTA sequence record, including id, description, and the sequence itself.
+| Object or function | Purpose |
+|---|---|
+| `Record(id, seq, desc=None)` | Create a record from an identifier, sequence, and optional description |
+| `parse(filename)` | Iterate over records in a plain or compressed FASTA file |
+| `parse_handle(handle)` | Iterate over FASTA records from an open text handle |
+| `read(filename)` | Return the first record from a FASTA file |
+| `to_dict(records)` | Create a dictionary mapping sequence identifiers to records |
+| `write(records, destination, wrap=70)` | Write records to a file or text handle and return the number written |
 
-```python
-import fastapy
+### Reading records
 
-record = fastapy.Record(
-    id='NP_950171.2', 
-    seq='MEEEAETEEQQRFSYQQRLKAAVHYTVGCLCEEVALDKEMQFSKQTIAAISELTFRQCENFAKDLEMFASICRKRQE',
-    desc='APITD1-CORT protein isoform 2 [Homo sapiens]'
-)
-
-print(record.id)            # NP_950171.2
-print(record.desc)          # APITD1-CORT protein isoform 2 [Homo sapiens]
-print(record.seq)           # MEEEAE..
-print(record.description)   # >NP_950171.2 G APITD1-CORT protein isoform 2 [Homo sapiens]
-print(len(record))          # 77
-print('EEEA' in record)     # True
-```
-
-By default, the sequence line is wrapped to 70 characters. You can provide the line length. Use zero (or None) for no wrapping.
-
-```python
-print(record)
-# >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
-# MEEEAETEEQQRFSYQQRLKAAVHYTVGCLCEEVALDKEMQFSKQTIAAISELTFRQCENFAKDLEMFAS
-# ICRKRQE
-
-print(record.format(wrap=30))
-# >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
-# MEEEAETEEQQRFSYQQRLKAAVHYTVGCL
-# CEEVALDKEMQFSKQTIAAISELTFRQCEN
-# FAKDLEMFASICRKRQE
-
-print(record.format(wrap=None))
-# >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
-# MEEEAETEEQQRFSYQQRLKAAVHYTVGCLCEEVALDKEMQFSKQTIAAISELTFRQCENFAKDLEMFASICRKRQE
-```
-
-### parse
-The `parse()` function is a generator to read FASTA records as `Record` objects one by one from a file (plain FASTA or compressed using gzip, bzip2, or zip). Because only one record is created at a time, very little memory is required.
+Use `parse()` to iterate over FASTA records:
 
 ```python
 import fastapy
 
-for record in fastapy.parse('tests/test.fasta.gz'):
-    print(record.id)
+for record in fastapy.parse("input.fasta"):
+    print(record.id, len(record), record.desc)
 ```
 
-For some tasks you may need reusable access to the records. For this purpose, you can use the built-in Python `list()` function to turn the iterator into a list:
+Input can be a filename or `pathlib.Path`. Compression is selected from the extension: `.gz` or `.gzip` (gzip), `.bz2` (bzip2), or `.zip` (ZIP). For ZIP archives, the first entry is read and must be a FASTA text file.
+
+For an open text handle, use `parse_handle()`:
 
 ```python
-import fastapy
+with open("input.fasta") as handle:
+    for record in fastapy.parse_handle(handle):
+        print(record.id)
+```
 
-records = list(fastapy.parse('tests/test.fasta.gz'))
+### Reading the first record
+
+Use `read()` to return the first record. Additional records are ignored; a file containing no records raises `ValueError`.
+
+```python
+record = fastapy.read("input.fasta")
+print(record.id)
+```
+
+### Working with records
+
+A `Record` stores a sequence identifier (`id`), sequence (`seq`), and optional description (`desc`). The `description` property returns the complete FASTA header, including `>`.
+
+```python
+record = fastapy.Record(id="seq1", seq="MRELEAKAT", desc="Example protein")
+
+print(record.id)           # seq1
+print(record.seq)          # MRELEAKAT
+print(record.desc)         # Example protein
+print(record.description)  # >seq1 Example protein
+print(len(record))         # 9
+print("LEA" in record)      # True
+```
+
+Iterating over a record yields its sequence characters. Use `print(record)` to display FASTA, or `record.format()` to obtain a FASTA string:
+
+```python
+print(record.format(wrap=3), end="")
+# >seq1 Example protein
+# MRE
+# LEA
+# KAT
+```
+
+The default line width is 70 characters. Use `wrap=0` or `wrap=None` for no wrapping.
+
+### Storing records in a list or dictionary
+
+Use a list for repeated access or positional indexing:
+
+```python
+records = list(fastapy.parse("input.fasta"))
 print(records[0].id)   # First record
 print(records[-1].id)  # Last record
 ```
 
-Another common task is to index your records by sequence identifier. Use `to_dict()` to turn a Record iterator (or list) into a dictionary.
+Use `to_dict()` to index records by identifier. Duplicate identifiers raise `ValueError`.
 
 ```python
-import fastapy
-
-records = fastapy.to_dict(fastapy.parse('tests/test.fasta.gz'))
-print(records['NP_002433.1'])   # Use any record id
+records = fastapy.to_dict(fastapy.parse("input.fasta"))
+print(records["seq1"])  # Replace with an identifier from your file
 ```
 
-### read
-The `read()` function reads only the first FASTA record from a file. It does not read any subsequent records in the file.
+Both approaches store all records in memory.
+
+### Writing records
+
+Use `write()` to save a single record or an iterable of records to a filename, `pathlib.Path`, or open text handle. The function returns the number of records written.
 
 ```python
-import fastapy
+# Write a single record
+record = fastapy.Record(id="seq1", seq="ATCG")
+fastapy.write(record, "sequence.fasta")
 
-seq_record = fastapy.read('tests/test.fasta')
-print(seq_record.id)           # NP_002433.1
+# Write a list of records
+records = [record, fastapy.Record(id="seq2", seq="GGTA")]
+count = fastapy.write(records, "sequences.fasta", wrap=80)
+print(count)  # 2
+
+# Write records stored in a dictionary
+records_by_id = fastapy.to_dict(records)
+fastapy.write(records_by_id.values(), "sequences.fasta.gz")
+
+# Write directly from a generator
+fastapy.write(fastapy.parse("input.fasta"), "output.fasta.bz2", wrap=0)
 ```
 
-## Test
-You can run tests to ensure that the module works as expected.
+Compression and options:
 
+- Output compression is selected from the extension: `.gz` or `.gzip` for gzip, and `.bz2` for bzip2.
+- ZIP output is not supported; a `.zip` destination raises `ValueError`.
+- Sequences are wrapped to 70 characters by default. Use `wrap=0` or `wrap=None` for no wrapping.
+- Existing output files are overwritten.
+- When you pass an open text handle, `write()` does not close it.
+
+```python
+with open("sequences.fasta", "w") as handle:
+    fastapy.write(records, handle)
 ```
+
+## Testing
+
+From the repository root, run:
+
+```bash
+pip install pytest
 pytest
 ```
 
 ## License
 
-[GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html)
+Distributed under the terms of the [GNU General Public License, version 3](https://www.gnu.org/licenses/gpl-3.0.html).

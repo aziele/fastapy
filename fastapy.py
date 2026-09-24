@@ -7,7 +7,10 @@ import pathlib
 import typing
 import zipfile
 
-__version__ = '1.0.6'
+__version__ = "1.1.0"
+
+DEFAULT_WRAP = 70
+
 
 class Record:
     """Object representing a FASTA (aka Pearson) record.
@@ -22,9 +25,9 @@ class Record:
         """Creates a Record.
 
         Example:
-        >>> record = Record(id='NP_055309.2', 
-        ...                 seq='MRELEAKAT',
-        ...                 desc='TNRC6A')
+        >>> record = Record(id="NP_055309.2", 
+        ...                 seq="MRELEAKAT",
+        ...                 desc="TNRC6A")
         >>> print(record)
         >NP_055309.2 TNRC6A
         MRELEAKAT
@@ -38,24 +41,24 @@ class Record:
         """Returns a description line (defline) of FASTA record.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT', desc='TNRC6A')
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT", desc="TNRC6A")
         >>> print(record.description)
         >NP_055309.2 TNRC6A
 
-        >>> record = Record(id='seqid', seq='ATCGA')
+        >>> record = Record(id="seqid", seq="ATCGA")
         >>> print(record.description)
         >seqid
         """
-        lst = [f'>{self.id}']
+        lst = [f">{self.id}"]
         if self.desc:
-            lst.append(f'{self.desc}')
+            lst.append(f"{self.desc}")
         return " ".join(lst)
 
     def __iter__(self):
         """Iterates over the characters in the sequence.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT', desc='TNRC6A')
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT", desc="TNRC6A")
         >>> for amino_acid in record:
         ...     print(amino_acid)
         M
@@ -79,8 +82,8 @@ class Record:
         """Implements the 'in' keyword to search the sequence.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT', desc='TNRC6A')
-        >>> print('M' in record)
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT", desc="TNRC6A")
+        >>> print("M" in record)
         True
         """
         return char in self.seq
@@ -89,7 +92,7 @@ class Record:
         """Returns the record as a string in the FASTA format.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT', desc='TNRC6A')
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT", desc="TNRC6A")
         >>> print(record)
         >NP_055309.2 TNRC6A
         MRELEAKAT
@@ -100,13 +103,13 @@ class Record:
         """Returns the length of the sequence.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT')
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT")
         >>> len(record)
         9
         """
         return len(self.seq)
 
-    def format(self, wrap:int = 70) -> str:
+    def format(self, wrap:int = DEFAULT_WRAP) -> str:
         """Returns a formatted FASTA record.
 
         Args:
@@ -114,7 +117,7 @@ class Record:
           Default: 70 characters, use zero (or None) for no wrapping.
 
         Example:
-        >>> record = Record(id='NP_055309.2', seq='MRELEAKAT', desc='TNRC6A')
+        >>> record = Record(id="NP_055309.2", seq="MRELEAKAT", desc="TNRC6A")
 
         >>> print(record.format())
         >NP_055309.2 TNRC6A
@@ -126,7 +129,7 @@ class Record:
         LEA
         KAT
         """
-        lst = [self.description, '\n']
+        lst = [self.description, "\n"]
         if wrap:
             for i in range(0, len(self.seq), wrap):
                 lst.append(f'{self.seq[i:i + wrap]}\n')
@@ -157,14 +160,14 @@ def parse_handle(handle) -> Record:
     desc = None
     seq = []
     for line in handle:
-        if line.startswith('>'):
+        if line.startswith(">"):
             if seq:
                 yield Record(seqid, "".join(seq), desc)
                 seq.clear()
             seqid = line.split()[0][1:]
             desc = line[len(seqid) + 1:].strip()
         else:
-            seq.append(line.rstrip())
+            seq.append("".join(line.split()))
     if seq:
         yield Record(seqid, "".join(seq), desc)
 
@@ -183,20 +186,20 @@ def parse(filename: typing.Union[str, pathlib.Path]) -> Record:
         OSError: If an operating system error occurs while opening the file.
     """
     compression_type = get_compression_type(filename)
-    if compression_type == 'bz2':
-        with bz2.open(filename, 'rt') as fh:
+    if compression_type == "bz2":
+        with bz2.open(filename, "rt") as fh:
             yield from parse_handle(fh)
-    elif compression_type == 'gz':
-        with gzip.open(filename, 'rt') as fh:
+    elif compression_type == "gz":
+        with gzip.open(filename, "rt") as fh:
             yield from parse_handle(fh)
-    elif compression_type == 'zip':
+    elif compression_type == "zip":
         with zipfile.ZipFile(filename) as z:
             # Assuming the first file in the archive is the one we want
             inner_filename = z.namelist()[0]
             with io.TextIOWrapper(z.open(inner_filename)) as fh:
                 yield from parse_handle(fh)
     else:
-        with open(filename, 'rt') as fh:
+        with open(filename, "rt") as fh:
             yield from parse_handle(fh)
 
 
@@ -220,6 +223,63 @@ def read(filename: typing.Union[str, pathlib.Path]) -> Record:
     return record
 
 
+def write(
+    records: typing.Union[Record, typing.Iterable[Record]],
+    destination: typing.Union[str, pathlib.Path, typing.TextIO],
+    wrap: typing.Optional[int] = DEFAULT_WRAP,
+) -> int:
+    """Writes FASTA records to a file or text handle.
+
+    Args:
+        records: a single `Record` or an iterable of records.
+        destination: a filename, pathlib.Path, or writable text handle.
+            Supports plain, gzip, and bzip2 files. Files are overwritten;
+            supplied handles remain open.
+        wrap (int): line length, default 70; use zero or None for no wrapping.
+
+    Returns:
+        The number of records written.
+
+    Example:
+    >>> record = Record(id="seq1", seq="ATCG")
+    >>> write(record, "sequence.fasta")
+    1
+    >>> records = [record, Record(id="seq2", seq="GGTA")]
+    >>> write(records, "sequences.fasta")
+    2
+    >>> records = to_dict(records)
+    >>> write(records.values(), "sequences.fasta.gz")
+    2
+    """
+    if wrap is not None:
+        if isinstance(wrap, bool) or not isinstance(wrap, int):
+            raise TypeError("wrap must be an integer or None")
+        if wrap < 0:
+            raise ValueError("wrap must be non-negative")
+
+    if isinstance(records, Record):
+        records = (records,)
+
+    def write_records(handle):
+        count = 0
+        for record in records:
+            if not isinstance(record, Record):
+                raise TypeError("Expected Record objects in the iterable")
+            handle.write(record.format(wrap=wrap))
+            count += 1
+        return count
+
+    if isinstance(destination, (str, pathlib.Path)):
+        compression = get_compression_type(destination)
+        if compression == "zip":
+            raise ValueError("ZIP output is not supported")
+        opener = {"gz": gzip.open, "bz2": bz2.open}.get(compression, open)
+        with opener(destination, "wt", encoding="utf-8", newline="\n") as handle:
+            return write_records(handle)
+
+    return write_records(destination)
+
+
 def to_dict(records) -> dict:
     """Turns a generator or list of `Record` objects into a dictionary.
 
@@ -235,10 +295,10 @@ def to_dict(records) -> dict:
 
     Example:
     >>> import fasta
-    >>> record_dict = fasta.to_dict(fasta.parse('test.fasta'))
+    >>> record_dict = fasta.to_dict(fasta.parse("test.fasta"))
     >>> print(sorted(record_dict.keys()))
-    ['ENO94161.1', 'NP_002433.1', 'sequence']
-    >>> print(record_dict['ENO94161.1'].description)
+    ["ENO94161.1", "NP_002433.1", "sequence"]
+    >>> print(record_dict["ENO94161.1"].description)
     RRM domain-containing RNA-binding protein
     >>> len(pdict)
     3
@@ -252,10 +312,10 @@ def to_dict(records) -> dict:
 
 
 COMPRESSION_EXTENSIONS = {
-    '.gz': 'gz',
-    '.gzip': 'gz',
-    '.bz2': 'bz2',
-    '.zip': 'zip',
+    ".gz": "gz",
+    ".gzip": "gz",
+    ".bz2": "bz2",
+    ".zip": "zip",
 }
 
 
