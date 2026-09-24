@@ -1,7 +1,6 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/fastapy?label=version&color=blue)
 ![tests workflow](https://github.com/aziele/fastapy/actions/workflows/run-tests.yml/badge.svg)
 ![OS](https://img.shields.io/badge/OS-Linux%20MacOS%20Windows-7373e3)
-[![DOI](https://zenodo.org/badge/522251113.svg)](https://zenodo.org/doi/10.5281/zenodo.10462088)
 
 # fastapy
 A lightweight Python package to read and write sequence records in [FASTA format](https://en.wikipedia.org/wiki/FASTA_format).
@@ -86,7 +85,7 @@ print(record)
 # ICRKRQE
 
 print(record.format(wrap=30))
-# >NP_001382951.1 G protein subunit gamma 5 [Homo sapiens]
+# >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
 # MEEEAETEEQQRFSYQQRLKAAVHYTVGCL
 # CEEVALDKEMQFSKQTIAAISELTFRQCEN
 # FAKDLEMFASICRKRQE
@@ -97,7 +96,7 @@ print(record.format(wrap=None))
 ```
 
 ### parse
-The `parse()` function is a generator to read FASTA records as `Record` objects one by one from a file (plain FASTA or compressed using gzip or bzip2). Because only one record is created at a time, very little memory is required.
+The `parse()` function is a generator to read FASTA records as `Record` objects one by one from a file (plain FASTA or compressed using gzip, bzip2, or zip). Because only one record is created at a time, very little memory is required.
 
 ```python
 import fastapy
@@ -106,7 +105,7 @@ for record in fastapy.parse('tests/test.fasta.gz'):
     print(record.id)
 ```
 
-For some tasks you may need to have a reusable access to the records. For this purpose, you can use the built-in Python `list()` function to turn the iterator into a list:
+For some tasks you may need reusable access to the records. For this purpose, you can use the built-in Python `list()` function to turn the iterator into a list:
 
 ```python
 import fastapy
@@ -121,7 +120,7 @@ Another common task is to index your records by sequence identifier. Use `to_dic
 ```python
 import fastapy
 
-records = fastapy.to_dict(fasta.parse('tests/test.fasta.gz'))
+records = fastapy.to_dict(fastapy.parse('tests/test.fasta.gz'))
 print(records['NP_002433.1'])   # Use any record id
 ```
 
@@ -139,7 +138,7 @@ print(seq_record.id)           # NP_002433.1
 You can run tests to ensure that the module works as expected.
 
 ```
-python -m unittest discover
+pytest
 ```
 
 ## License
