@@ -139,7 +139,7 @@ print(seq_record.id)           # NP_002433.1
 You can run tests to ensure that the module works as expected.
 
 ```
-python -m unittest discover
+pytest
 ```
 
 ## License
