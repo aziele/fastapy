@@ -83,14 +83,20 @@ class TestFasta(unittest.TestCase):
     def test_get_compression_type_gz(self):
         file_type = fp.get_compression_type(TEST_DIR / 'test.fasta.gz')
         self.assertEqual(file_type, 'gz')
+        file_type_upper = fp.get_compression_type(TEST_DIR / 'test.fasta.GZ')
+        self.assertEqual(file_type_upper, 'gz')
 
     def test_get_compression_type_bz2(self):
         file_type = fp.get_compression_type(TEST_DIR / 'test.fasta.bz2')
         self.assertEqual(file_type, 'bz2')
+        file_type_upper = fp.get_compression_type(TEST_DIR / 'test.fasta.BZ2')
+        self.assertEqual(file_type_upper, 'bz2')
 
     def test_get_compression_type_zip(self):
         file_type = fp.get_compression_type(TEST_DIR / 'test.fasta.zip')
         self.assertEqual(file_type, 'zip')
+        file_type_upper = fp.get_compression_type(TEST_DIR / 'test.fasta.ZIP')
+        self.assertEqual(file_type_upper, 'zip')
 
     def test_parse_fasta_file(self):
         lst = [r.id for r in fp.parse(TEST_DIR / 'test.fasta.gz')]
@@ -131,7 +137,7 @@ class TestFasta(unittest.TestCase):
         self.assertEqual(len(record), 362)        
 
     def test_read_zip_file(self):
-        record = fp.read(TEST_DIR / 'test.fasta.gz')
+        record = fp.read(TEST_DIR / 'test.fasta.zip')
         self.assertEqual(record.id, 'NP_002433.1')
         self.assertEqual(len(record), 362)  
 
