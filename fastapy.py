@@ -181,20 +181,7 @@ def parse(filename: typing.Union[str, pathlib.Path]) -> Record:
     Raises:
         FileNotFoundError: If the input file cannot be found.
         OSError: If an operating system error occurs while opening the file.
-        ValueError: If the compression type of the file is unknown.
     """
-    # Try to open the file as a plain text.
-    try:
-        with open(filename, 'rt') as fh:
-            yield from parse_handle(fh)
-        return  # Exit early if the file is successfully parsed
-    except (FileNotFoundError, OSError):
-        raise # Re-raise known exceptions
-    except Exception:
-        # Continue to check for compression types if an unknown exception occurs
-        pass
-
-    # Check and handle compressed formats
     compression_type = get_compression_type(filename)
     if compression_type == 'bz2':
         with bz2.open(filename, 'rt') as fh:
@@ -208,9 +195,9 @@ def parse(filename: typing.Union[str, pathlib.Path]) -> Record:
             inner_filename = z.namelist()[0]
             with io.TextIOWrapper(z.open(inner_filename)) as fh:
                 yield from parse_handle(fh)
-            return
     else:
-        raise ValueError(f"Unknown compression type in file: '{filename}'")
+        with open(filename, 'rt') as fh:
+            yield from parse_handle(fh)
 
 
 def read(filename: typing.Union[str, pathlib.Path]) -> Record:
@@ -264,10 +251,18 @@ def to_dict(records) -> dict:
     return d
 
 
+COMPRESSION_EXTENSIONS = {
+    '.gz': 'gz',
+    '.gzip': 'gz',
+    '.bz2': 'bz2',
+    '.zip': 'zip',
+}
+
+
 def get_compression_type(
         filename: typing.Union[str, pathlib.Path]
     ) -> typing.Union[str, None]:
-    """Returns the compression type of a file based on its first few bytes.
+    """Returns the compression type of a file based on its extension.
 
     Args:
         filename: a name or pathlib.Path of a file containing FASTA sequences
@@ -275,16 +270,6 @@ def get_compression_type(
     Returns:
         A string representing the compression type of the file, or None 
         if the compression type could not be determined.
-
-    Reference:
-        http://stackoverflow.com/questions/13044562
     """
-    MAGIC_DICT = {b'\x1f\x8b\x08': 'gz',
-                  b'\x42\x5a\x68': 'bz2',
-                  b'\x50\x4b\x03\x04': 'zip'}
-    with open(filename, 'rb') as fh:
-        file_start = fh.read(max(len(few_bytes) for few_bytes in MAGIC_DICT))
-    for first_bytes, compression_type in MAGIC_DICT.items():
-        if file_start.startswith(first_bytes):
-            return compression_type
-    return None
+    ext = pathlib.Path(filename).suffix.lower()
+    return COMPRESSION_EXTENSIONS.get(ext)

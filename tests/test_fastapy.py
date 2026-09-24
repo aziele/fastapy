@@ -92,6 +92,14 @@ class TestFasta(unittest.TestCase):
         file_type = fp.get_compression_type(TEST_DIR / 'test.fasta.zip')
         self.assertEqual(file_type, 'zip')
 
+    def test_get_compression_type_case_insensitive(self):
+        self.assertEqual(fp.get_compression_type('file.fasta.GZ'), 'gz')
+        self.assertEqual(fp.get_compression_type('file.fasta.BZ2'), 'bz2')
+        self.assertEqual(fp.get_compression_type('file.fasta.ZIP'), 'zip')
+
+    def test_get_compression_type_gzip_extension(self):
+        self.assertEqual(fp.get_compression_type('file.fasta.gzip'), 'gz')
+
     def test_parse_fasta_file(self):
         lst = [r.id for r in fp.parse(TEST_DIR / 'test.fasta.gz')]
         self.assertEqual(len(lst), 3)
