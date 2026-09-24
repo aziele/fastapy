@@ -37,7 +37,7 @@ python
 ```
 
 ## Quick Start
-Typical usage is to read a FASTA file and loop over the sequences record(s).
+Typical usage is to read a FASTA file and loop over the sequence records.
 
 ```python
 import fastapy
@@ -71,8 +71,8 @@ record = fastapy.Record(
 
 print(record.id)            # NP_950171.2
 print(record.desc)          # APITD1-CORT protein isoform 2 [Homo sapiens]
-print(record.seq)           # MEEEAE..
-print(record.description)   # >NP_950171.2 G APITD1-CORT protein isoform 2 [Homo sapiens]
+print(record.seq)           # MEEEAETEEQQRFSYQQRLKAAVHYTVGCLCEEVALDKEMQFSKQTIAAISELTFRQCENFAKDLEMFASICRKRQE
+print(record.description)   # >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
 print(len(record))          # 77
 print('EEEA' in record)     # True
 ```
@@ -86,7 +86,7 @@ print(record)
 # ICRKRQE
 
 print(record.format(wrap=30))
-# >NP_001382951.1 G protein subunit gamma 5 [Homo sapiens]
+# >NP_950171.2 APITD1-CORT protein isoform 2 [Homo sapiens]
 # MEEEAETEEQQRFSYQQRLKAAVHYTVGCL
 # CEEVALDKEMQFSKQTIAAISELTFRQCEN
 # FAKDLEMFASICRKRQE
@@ -97,7 +97,7 @@ print(record.format(wrap=None))
 ```
 
 ### parse
-The `parse()` function is a generator to read FASTA records as `Record` objects one by one from a file (plain FASTA or compressed using gzip or bzip2). Because only one record is created at a time, very little memory is required.
+The `parse()` function is a generator to read FASTA records as `Record` objects one by one from a file (plain FASTA or compressed using gzip, bzip2, or zip). Because only one record is created at a time, very little memory is required.
 
 ```python
 import fastapy
@@ -106,7 +106,7 @@ for record in fastapy.parse('tests/test.fasta.gz'):
     print(record.id)
 ```
 
-For some tasks you may need to have a reusable access to the records. For this purpose, you can use the built-in Python `list()` function to turn the iterator into a list:
+For some tasks you may need reusable access to the records. For this purpose, you can use the built-in Python `list()` function to turn the iterator into a list:
 
 ```python
 import fastapy
@@ -121,7 +121,7 @@ Another common task is to index your records by sequence identifier. Use `to_dic
 ```python
 import fastapy
 
-records = fastapy.to_dict(fasta.parse('tests/test.fasta.gz'))
+records = fastapy.to_dict(fastapy.parse('tests/test.fasta.gz'))
 print(records['NP_002433.1'])   # Use any record id
 ```
 
